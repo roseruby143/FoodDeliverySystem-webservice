@@ -30,7 +30,7 @@ import com.project.fooddeliverysystem.services.admin.OrdersServiceImp;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@CrossOrigin(origins = {"http://localhost:4200","http://localhost:4100"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://ec2-54-166-212-49.compute-1.amazonaws.com:4200","http://ec2-54-166-212-49.compute-1.amazonaws.com:4100"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/v1")
 public class OrdersController {
