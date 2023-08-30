@@ -1,12 +1,16 @@
 package com.project.fooddeliverysystem.model.user;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.TableGenerator;
 
@@ -22,7 +26,7 @@ public class Users {
 	@Column(name="first_name", nullable = false)
 	private String first_name;
 	
-	@Column(name="last_name", nullable = false)
+	@Column(name="last_name")
 	private String last_name;
 	
 	@Column(name="email", nullable = false)
@@ -31,26 +35,17 @@ public class Users {
 	@Column(name="password", nullable = false)
 	private String password;
 	
-	@Column(name="street")
-	private String street;
+	@OneToMany(mappedBy = "users")
+    private List<Address> addresses = new ArrayList<Address>();
 	
-	@Column(name="city")
-	private String city;
-	
-	@Column(name="state")
-	private String state;
-	
-	@Column(name="country")
-	private String country;
-	
-	@Column(name="pincode")
-	private int pincode;
-	
-	@Column(name="phone")
-	private String phone;
-	
+	/*
+	 * Refers if the user is Active or Inactive
+	 * */
 	@Column(name="status", nullable = false)
 	private String status;
+	
+	@Column(name="imgUrl")
+	private String imgUrl;
 	
 	@Column(name="created_on")
 	private Date created_on;
@@ -59,36 +54,32 @@ public class Users {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-
-	public Users(int userId, String first_name, String last_name, String email, String password, String street,
-			String city, String state, String country, int pincode, String phone, String status, Date created_on) {
+	
+	public Users(int userId) {
 		super();
 		this.id = userId;
+		// TODO Auto-generated constructor stub
+	}
+
+	public Users(int id, String first_name, String last_name, String email, String password, 
+			String status, String imgUrl, Date created_on) {
+		super();
+		this.id = id;
 		this.first_name = first_name;
 		this.last_name = last_name;
 		this.email = email;
 		this.password = password;
-		this.street = street;
-		this.city = city;
-		this.state = state;
-		this.country = country;
-		this.pincode = pincode;
-		this.phone = phone;
 		this.status = status;
+		this.imgUrl = imgUrl;
 		this.created_on = created_on;
 	}
 
-	public Users(int userId) {
-		super();
-		this.id = userId;
-	}
-
-	public int getUserId() {
+	public int getId() {
 		return id;
 	}
 
-	public void setUserId(int userId) {
-		this.id = userId;
+	public void setId(int id) {
+		this.id = id;
 	}
 
 	public String getFirst_name() {
@@ -123,52 +114,20 @@ public class Users {
 		this.password = password;
 	}
 
-	public String getStreet() {
-		return street;
+	public String getStatus() {
+		return status;
 	}
 
-	public void setStreet(String street) {
-		this.street = street;
+	public void setStatus(String status) {
+		this.status = status;
 	}
 
-	public String getCity() {
-		return city;
+	public String getImgUrl() {
+		return imgUrl;
 	}
 
-	public void setCity(String city) {
-		this.city = city;
-	}
-
-	public String getState() {
-		return state;
-	}
-
-	public void setState(String state) {
-		this.state = state;
-	}
-
-	public String getCountry() {
-		return country;
-	}
-
-	public void setCountry(String country) {
-		this.country = country;
-	}
-
-	public int getPincode() {
-		return pincode;
-	}
-
-	public void setPincode(int pincode) {
-		this.pincode = pincode;
-	}
-
-	public String getPhone() {
-		return phone;
-	}
-
-	public void setPhone(String phone) {
-		this.phone = phone;
+	public void setImgUrl(String imgUrl) {
+		this.imgUrl = imgUrl;
 	}
 
 	public Date getCreated_on() {
@@ -179,19 +138,10 @@ public class Users {
 		this.created_on = created_on;
 	}
 
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
 	@Override
 	public String toString() {
-		return "Users [userId=" + id + ", first_name=" + first_name + ", last_name=" + last_name + ", email="
-				+ email + ", password=" + password + ", street=" + street + ", city=" + city + ", state=" + state
-				+ ", country=" + country + ", pincode=" + pincode + ", phone=" + phone + ", status=" + status
+		return "Users [id=" + id + ", first_name=" + first_name + ", last_name=" + last_name + ", email=" + email
+				+ ", password=" + password + ", status=" + status + ", imgUrl=" + imgUrl
 				+ ", created_on=" + created_on + "]";
 	}
 	

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,8 +19,15 @@ import com.project.fooddeliverysystem.dao.admin.DishesDAO;
 import com.project.fooddeliverysystem.dao.admin.RestaurantDAO;
 import com.project.fooddeliverysystem.dto.ResponseDto;
 import com.project.fooddeliverysystem.exceptions.NotFoundException;
+import com.project.fooddeliverysystem.exceptions.UnauthorizedUserException;
 import com.project.fooddeliverysystem.model.admin.Dishes;
+import com.project.fooddeliverysystem.model.user.Users;
+import com.project.fooddeliverysystem.security.SecurityService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@CrossOrigin(origins = {"http://localhost:4200","http://localhost:4100"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/v1")
 public class DishesController {
@@ -29,6 +37,7 @@ public class DishesController {
 	
 	@Autowired
 	private RestaurantDAO resDao;
+	@Autowired private SecurityService securityService;
 	
 	/**
 	 * Get all dishes
@@ -41,7 +50,7 @@ public class DishesController {
 		if(!restData.isEmpty()) {
 			return restData;
 		}
-		throw new NotFoundException("Dishes data does exist");
+		throw new NotFoundException("Dishes does not exist");
 	}
 	
 	/**
@@ -55,7 +64,7 @@ public class DishesController {
 		if(resData.isPresent()) {
 			return resData;
 		}
-		throw new NotFoundException("Dish data does exist with id '"+ id +"'");
+		throw new NotFoundException("Dish does not exist with id '"+ id +"'. Create a new Dish");
 	}
 	
 	/**
@@ -71,7 +80,7 @@ public class DishesController {
 		if(!dishesInResttaurantData.isEmpty()) {
 			return dishesInResttaurantData;
 		}
-		throw new NotFoundException("Dishes does exist for Restaurant with id '"+ id +"'");
+		throw new NotFoundException("Restaurant with id '"+ id +"' doesnot have any dishes");
 	}
 	
 	/**
@@ -80,12 +89,15 @@ public class DishesController {
 	 * @return
 	 */
 	@PostMapping("/restaurant/{restaurantId}/dishes")
-	public Dishes save(@RequestBody Dishes dishesReq, @PathVariable("restaurantId") int restaurantId) {
-		if (resDao.existsById(restaurantId)) {
-			dishesReq.setAdded_on(new Date());
-			return dishesDao.save(dishesReq);
+	public Dishes save(@RequestBody Dishes dishesReq, @PathVariable("restaurantId") int restaurantId, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			if (resDao.existsById(restaurantId)) {
+				dishesReq.setAdded_on(new Date());
+				return dishesDao.save(dishesReq);
+			}
+			throw new NotFoundException("Restaurant with id '"+ restaurantId +"' dosenot exist.");
 		}
-		throw new NotFoundException("Restaurant with id '"+ restaurantId +"' dosenot exist.");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 
@@ -95,13 +107,16 @@ public class DishesController {
 	 * @return
 	 */
 	@PutMapping("/dishes/{id}")
-	public Dishes udpate(@RequestBody Dishes dish) {
-		//System.out.println("**************** dish : "+dish.toString());
-		boolean exists = dishesDao.existsById(dish.getDishId());
-		if (exists) {
-			return dishesDao.save(dish);
+	public Dishes udpate(@RequestBody Dishes dish, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			//System.out.println("**************** dish : "+dish.toString());
+			boolean exists = dishesDao.existsById(dish.getDishId());
+			if (exists) {
+				return dishesDao.save(dish);
+			}
+			throw new NotFoundException("Dishes does not exist with id '"+ dish.getDishId() +"'");
 		}
-		throw new NotFoundException("Dishes does not exist with id '"+ dish.getDishId() +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 
 	/**
@@ -110,13 +125,16 @@ public class DishesController {
 	 * @return 
 	 */
 	@DeleteMapping("/dishes/{id}")
-	public ResponseDto deleteOne(@PathVariable("id") int id) {
-		boolean exists = dishesDao.existsById(id);
-		if (exists) {
-			dishesDao.deleteById(id);
-			return new ResponseDto("Success","Dish deleted", new Date(), null);
+	public ResponseDto deleteOne(@PathVariable("id") int id, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			boolean exists = dishesDao.existsById(id);
+			if (exists) {
+				dishesDao.deleteById(id);
+				return new ResponseDto("Success","Dish deleted", new Date(), null);
+			}
+			throw new NotFoundException("Dish does not exist with id '"+ id +"'");
 		}
-		throw new NotFoundException("Dish does not exist with id '"+ id +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 
 	/**
@@ -125,13 +143,31 @@ public class DishesController {
 	 * @return 
 	 */
 	@DeleteMapping("/restaurant/{restaurantId}/dishes")
-	public ResponseDto deleteAllDishesByRestaurantId(@PathVariable("restaurantId") int restaurantId) {
-		//boolean exists = dishesDao.existsById(id);
-		if (resDao.existsById(restaurantId)) {
-			dishesDao.deleteByRestaurantId(restaurantId);
-			return new ResponseDto("Success","All Dishes deleted for restaurant id "+restaurantId, new Date(), null);
+	public ResponseDto deleteAllDishesByRestaurantId(@PathVariable("restaurantId") int restaurantId, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			//boolean exists = dishesDao.existsById(id);
+			if (resDao.existsById(restaurantId)) {
+				dishesDao.deleteByRestaurantId(restaurantId);
+				return new ResponseDto("Success","All Dishes deleted for restaurant id "+restaurantId, new Date(), null);
+			}
+			throw new NotFoundException("Restaurant with id '"+ restaurantId +"' dosenot exist.");
 		}
-		throw new NotFoundException("Restaurant with id '"+ restaurantId +"' dosenot exist.");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
+	}
+	
+	/**
+	 * Get categories
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/restaurant/{restaurantId}/dishes/categories")
+	public List<String> getDistinctCategories(@PathVariable("restaurantId") int restaurantId) {
+		List<String> resData = dishesDao.getDistinctCategories(restaurantId);
+		System.out.println("******** get restaurant data with id : resData - "+resData);
+		if(!resData.isEmpty()) {
+			return resData;
+		}
+		throw new NotFoundException("Categories does not exist");
 	}
 
 }

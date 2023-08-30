@@ -5,10 +5,13 @@ import java.util.Date;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import com.project.fooddeliverysystem.model.user.Address;
 import com.project.fooddeliverysystem.model.user.Users;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -27,7 +30,7 @@ public class Orders {
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = "customIncrementer")
 	private int id;
 		
-		@Column(name="order_date")
+		@Column(name="order_date", nullable = false)
 		private Date orderDate;
 		
 		/*
@@ -45,37 +48,45 @@ public class Orders {
 		private int totalItems;
 		
 		@Column(name="subtotal", nullable = false)
-		private int itemsSubTotal;
+		private double itemsSubTotal;
 		
-		@Column(name="tax_charges", nullable = false)
-		private int taxCharges;
+		@Column(name="tax_n_fees", nullable = false)
+		private double taxNFees;
 		
 		@Column(name="delivery_charges", nullable = false)
-		private int deliveryCharges;
+		private double deliveryCharges;
+		
 		
 		@Column(name="driver_tip", nullable = false)
-		private int driverTip;
+		private double driverTip;
 		
 		@Column(name="total_amount", nullable = false)
-		private int totalAmount;
+		private double totalAmount;
 		
-		@Column(name="payment_status")
+		@Column(name="payment_status", nullable = false)
 		private int paymentStatus;
 
 		// payment status properties
 		@Column(name="payment_status_title")
 		private String paymentStatusTitle;
 		
-		@Column(name="paymen_method")
+		@Column(name="paymen_method", nullable = false)
 		private int paymentMethod;
 		
 		@Column(name="payment_method_title")
 		private String paymentMethodTitle;
 		
+		@Column(name="instruction")
+		private String instruction;
+		
 		/************** CHECK THIS ONE **************/
 		/*
 		 * @Column(name="creator_admin_id") private String creatorAdmin;
 		 */
+		
+		@ManyToOne()
+		@OnDelete(action = OnDeleteAction.SET_DEFAULT)
+		private Address address;
 
 		// customer / user properties
 		@ManyToOne(optional = false)
@@ -91,16 +102,16 @@ public class Orders {
 			super();
 		}
 
-		public Orders(int orderId, Date orderDate, String orderStatus, int totalItems, int itemsSubTotal,
-				int taxCharges, int deliveryCharges, int driverTip, int totalAmount, int paymentStatus,
-				String paymentStatusTitle, int paymentMethod, String paymentMethodTitle, int userId, int deliveryId) {
+		public Orders(int orderId, Date orderDate, String orderStatus, int totalItems, double itemsSubTotal,
+				double taxCharges, double deliveryCharges, double driverTip, double totalAmount, int paymentStatus,
+				String paymentStatusTitle, int paymentMethod, String paymentMethodTitle,String instruction, int addressId, int userId, int deliveryId) {
 			super();
 			this.id = orderId;
 			this.orderDate = orderDate;
 			this.orderStatus = orderStatus;
 			this.totalItems = totalItems;
 			this.itemsSubTotal = itemsSubTotal;
-			this.taxCharges = taxCharges;
+			this.taxNFees = taxCharges;
 			this.deliveryCharges = deliveryCharges;
 			this.driverTip = driverTip;
 			this.totalAmount = totalAmount;
@@ -108,8 +119,10 @@ public class Orders {
 			this.paymentStatusTitle = paymentStatusTitle;
 			this.paymentMethod = paymentMethod;
 			this.paymentMethodTitle = paymentMethodTitle;
+			this.address = new Address(addressId);
 			this.user = new Users(userId);
 			this.delivery = new Delivery(deliveryId);
+			this.instruction = instruction;
 		}
 
 		public Orders(int orderId) {
@@ -149,43 +162,43 @@ public class Orders {
 			this.totalItems = totalItems;
 		}
 
-		public int getItemsSubTotal() {
+		public double getItemsSubTotal() {
 			return itemsSubTotal;
 		}
 
-		public void setItemsSubTotal(int itemsSubTotal) {
+		public void setItemsSubTotal(double itemsSubTotal) {
 			this.itemsSubTotal = itemsSubTotal;
 		}
 
-		public int getTaxCharges() {
-			return taxCharges;
+		public double getTaxNFees() {
+			return taxNFees;
 		}
 
-		public void setTaxCharges(int taxCharges) {
-			this.taxCharges = taxCharges;
+		public void setTaxNFees(double taxCharges) {
+			this.taxNFees = taxCharges;
 		}
 
-		public int getDeliveryCharges() {
+		public double getDeliveryCharges() {
 			return deliveryCharges;
 		}
 
-		public void setDeliveryCharges(int deliveryCharges) {
+		public void setDeliveryCharges(double deliveryCharges) {
 			this.deliveryCharges = deliveryCharges;
 		}
 
-		public int getDriverTip() {
+		public double getDriverTip() {
 			return driverTip;
 		}
 
-		public void setDriverTip(int driverTip) {
+		public void setDriverTip(double driverTip) {
 			this.driverTip = driverTip;
 		}
 
-		public int getTotalAmount() {
+		public double getTotalAmount() {
 			return totalAmount;
 		}
 
-		public void setTotalAmount(int totalAmount) {
+		public void setTotalAmount(double totalAmount) {
 			this.totalAmount = totalAmount;
 		}
 
@@ -221,6 +234,22 @@ public class Orders {
 			this.paymentMethodTitle = paymentMethodTitle;
 		}
 
+		public String getInstruction() {
+			return instruction;
+		}
+
+		public void setInstruction(String instruction) {
+			this.instruction = instruction;
+		}
+
+		public Address getAddress() {
+			return address;
+		}
+
+		public void setAddress(Address address) {
+			this.address = address;
+		}
+
 		public Users getUser() {
 			return user;
 		}
@@ -230,18 +259,21 @@ public class Orders {
 		}
 
 		
-		public Delivery getDelivery() { return delivery; }
+		public Delivery getDelivery() { 
+			return delivery; 
+		}
 	  
-		public void setDelivery(Delivery delivery) { this.delivery = delivery; }
-		 
+		public void setDelivery(Delivery delivery) { 
+			this.delivery = delivery; 
+		}
 
 		@Override
 		public String toString() {
-			return "Orders [orderId=" + id + ", orderDate=" + orderDate + ", orderStatus=" + orderStatus
-					+ ", totalItems=" + totalItems + ", itemsSubTotal=" + itemsSubTotal + ", taxCharges=" + taxCharges
-					+ ", deliveryCharges=" + deliveryCharges + ", driverTip=" + driverTip + ", totalAmount="
-					+ totalAmount + ", paymentStatus=" + paymentStatus + ", paymentStatusTitle=" + paymentStatusTitle
-					+ ", paymentMethod=" + paymentMethod + ", paymentMethodTitle=" + paymentMethodTitle + ", user="
-					+ user  + ", delivery=" + delivery  + "]";
+			return "Orders [id=" + id + ", orderDate=" + orderDate + ", orderStatus=" + orderStatus + ", totalItems="
+					+ totalItems + ", itemsSubTotal=" + itemsSubTotal + ", taxNFees=" + taxNFees + ", deliveryCharges="
+					+ deliveryCharges + ", driverTip=" + driverTip + ", totalAmount=" + totalAmount + ", paymentStatus="
+					+ paymentStatus + ", paymentStatusTitle=" + paymentStatusTitle + ", paymentMethod=" + paymentMethod
+					+ ", paymentMethodTitle=" + paymentMethodTitle + ", instruction=" + instruction + ", address="
+					+ address + ", user=" + user + ", delivery=" + delivery + "]";
 		}
 }

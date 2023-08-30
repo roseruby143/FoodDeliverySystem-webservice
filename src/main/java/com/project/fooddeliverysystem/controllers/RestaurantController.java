@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,14 +19,23 @@ import com.project.fooddeliverysystem.dao.admin.RestaurantDAO;
 import com.project.fooddeliverysystem.dto.ResponseDto;
 import com.project.fooddeliverysystem.exceptions.AlreadyExistException;
 import com.project.fooddeliverysystem.exceptions.NotFoundException;
+import com.project.fooddeliverysystem.exceptions.UnauthorizedUserException;
 import com.project.fooddeliverysystem.model.admin.Restaurant;
+import com.project.fooddeliverysystem.model.user.Users;
+import com.project.fooddeliverysystem.security.SecurityService;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+@CrossOrigin(origins = {"http://localhost:4200","http://localhost:4100"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/v1/restaurant")
 public class RestaurantController {
 	
 	@Autowired
 	private RestaurantDAO restDao;
+
+	@Autowired private SecurityService securityService;
 	
 	/**
 	 * Get all restaurant
@@ -38,7 +48,7 @@ public class RestaurantController {
 		if(!restData.isEmpty()) {
 			return restData;
 		}
-		throw new NotFoundException("Restaurant data does exist");
+		throw new NotFoundException("Restaurant data does not exist");
 	}
 	
 	/**
@@ -49,10 +59,13 @@ public class RestaurantController {
 	@GetMapping("/{id}")
 	public Optional<Restaurant> getOne(@PathVariable("id") int id) {
 		Optional<Restaurant> resData = restDao.findById(id);
+		//System.out.println("******** get restaurant data with id : resData - "+resData);
 		if(resData.isPresent()) {
 			return resData;
 		}
-		throw new NotFoundException("Restaurant data does exist with id '"+ id +"'");
+		throw new NotFoundException("Restaurant data does not exist with id '"+ id +"'");
+		
+		
 	}
 	
 	/**
@@ -61,13 +74,16 @@ public class RestaurantController {
 	 * @return
 	 */
 	@PostMapping("")
-	public Restaurant save(@RequestBody Restaurant restaurantReq) {
-		boolean exists = restDao.existsByEmail(restaurantReq.getEmail());
-		if (!exists) {
-			restaurantReq.setAdded_on(new Date());
-			return restDao.save(restaurantReq);
+	public Restaurant save(@RequestBody Restaurant restaurantReq, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			boolean exists = restDao.existsByEmail(restaurantReq.getEmail());
+			if (!exists) {
+				restaurantReq.setAdded_on(new Date());
+				return restDao.save(restaurantReq);
+			}
+			throw new AlreadyExistException("Restaurant already exist with email '"+restaurantReq.getEmail() +"'");
 		}
-		throw new AlreadyExistException("Restaurant already exist with email '"+restaurantReq.getEmail() +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 
@@ -77,12 +93,15 @@ public class RestaurantController {
 	 * @return
 	 */
 	@PutMapping("/{id}")
-	public Restaurant udpate(@RequestBody Restaurant restaurant) {
-		boolean exists = restDao.existsById(restaurant.getRestaurantId());
-		if (exists) {
-			return restDao.save(restaurant);
+	public Restaurant udpate(@RequestBody Restaurant restaurant, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			boolean exists = restDao.existsById(restaurant.getId());
+			if (exists) {
+				return restDao.save(restaurant);
+			}
+			throw new NotFoundException("Restaurant does not exist with id '"+ restaurant.getId() +"'");
 		}
-		throw new NotFoundException("Restaurant does not exist with id '"+ restaurant.getRestaurantId() +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 
 	/**
@@ -91,15 +110,32 @@ public class RestaurantController {
 	 * @return 
 	 */
 	@DeleteMapping("/{id}")
-	public ResponseDto deleteOne(@PathVariable("id") int id) {
-		boolean exists = restDao.existsById(id);
-		if (exists) {
-			restDao.deleteById(id);
-			return new ResponseDto("Success","Restaurant deleted", new Date(), null);
+	public ResponseDto deleteOne(@PathVariable("id") int id, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			boolean exists = restDao.existsById(id);
+			if (exists) {
+				restDao.deleteById(id);
+				return new ResponseDto("Success","Restaurant deleted", new Date(), null);
+			}
+			throw new NotFoundException("Restaurant does not exist with id '"+ id +"'");
 		}
-		throw new NotFoundException("Restaurant does not exist with id '"+ id +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
-
-
+	
+	/**
+	 * Get categories
+	 * @param id
+	 * @return
+	 */
+	@GetMapping("/categories")
+	public List<String> getDistinctCategories() {
+		List<String> resData = restDao.getDistinctCategories();
+		//System.out.println("******** get restaurant data with id : resData - "+resData);
+		if(!resData.isEmpty()) {
+			return resData;
+		}
+		throw new NotFoundException("Categories does not exist");
+		
+	}
 
 }

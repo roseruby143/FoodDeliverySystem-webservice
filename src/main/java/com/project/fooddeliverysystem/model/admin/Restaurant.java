@@ -37,6 +37,9 @@ public class Restaurant {
 	@Column(name="contact_person", nullable = false)
 	private String contact_person;
 	
+	@Column(name="category")
+	private String category;
+	
 	@Column(name="rating")
 	private double rating;
 	
@@ -51,15 +54,17 @@ public class Restaurant {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Restaurant(int restaurantId, String name, String address, String phone, String email, String contact_person,
-			double rating, String restaurantImageUrl, Date added_on) {
+	public Restaurant(int id, String name, String description, String address, String phone, String email,
+			String contact_person, String category, double rating, String restaurantImageUrl, Date added_on) {
 		super();
-		this.id = restaurantId;
+		this.id = id;
 		this.name = name;
+		this.description = description;
 		this.address = address;
 		this.phone = phone;
 		this.email = email;
 		this.contact_person = contact_person;
+		this.category = category;
 		this.rating = rating;
 		this.restaurantImageUrl = restaurantImageUrl;
 		this.added_on = added_on;
@@ -70,12 +75,20 @@ public class Restaurant {
 		this.id = restaurantId;
 	}
 
-	public int getRestaurantId() {
+	public int getId() {
 		return id;
 	}
 
-	public void setRestaurantId(int restaurantId) {
-		this.id = restaurantId;
+	public void setId(int id) {
+		this.id = id;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	public String getName() {
@@ -118,6 +131,14 @@ public class Restaurant {
 		this.contact_person = contact_person;
 	}
 
+	public String getCategory() {
+		return category;
+	}
+
+	public void setCategory(String category) {
+		this.category = category;
+	}
+
 	public double getRating() {
 		return rating;
 	}
@@ -144,9 +165,10 @@ public class Restaurant {
 
 	@Override
 	public String toString() {
-		return "Restaurant [restaurantId=" + id + ", name=" + name + ", address=" + address + ", phone="
-				+ phone + ", email=" + email + ", contact_person=" + contact_person + ", rating=" + rating
-				+ ", restaurantImageUrl=" + restaurantImageUrl + ", added_on=" + added_on + "]";
+		return "Restaurant [id=" + id + ", name=" + name + ", description=" + description + ", address=" + address
+				+ ", phone=" + phone + ", email=" + email + ", contact_person=" + contact_person + ", category="
+				+ category + ", rating=" + rating + ", restaurantImageUrl=" + restaurantImageUrl + ", added_on="
+				+ added_on + "]";
 	}
 	
 

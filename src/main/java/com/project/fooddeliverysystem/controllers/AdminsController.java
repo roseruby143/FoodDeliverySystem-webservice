@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,16 +20,78 @@ import com.project.fooddeliverysystem.dto.LoginReqDto;
 import com.project.fooddeliverysystem.dto.ResponseDto;
 import com.project.fooddeliverysystem.exceptions.AlreadyExistException;
 import com.project.fooddeliverysystem.exceptions.NotFoundException;
+import com.project.fooddeliverysystem.exceptions.UnauthorizedUserException;
 import com.project.fooddeliverysystem.model.admin.Admins;
+import com.project.fooddeliverysystem.security.SecurityService;
 import com.project.fooddeliverysystem.services.admin.AdminsService;
 
-//@CrossOrigin(origins = "http://localhost:8081")
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+@CrossOrigin(origins = {"http://localhost:4200","http://localhost:4100"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/v1/admin")
 public class AdminsController {
 	
 	@Autowired private AdminDAO adminDao;
 	@Autowired private AdminsService adminService;
+	@Autowired private SecurityService securityService;
+	
+	/**
+	 * Validate Login for admin user.
+	 * @param adminsReq
+	 * @return
+	 */
+	@PostMapping("/login")
+	public Admins login(@RequestBody LoginReqDto loginReqDto, HttpServletRequest request) {
+		boolean eixts = adminService.existsByEmail(loginReqDto.getEmail());
+		if (eixts) {
+			boolean match = adminService.login(loginReqDto);
+			if(match) {
+				
+				Admins aData = adminService.findByEmail(loginReqDto.getEmail());
+				
+				// check for user status
+				if(!aData.getStatus().equalsIgnoreCase("active")) {
+					throw new NotFoundException("Admin not active.");
+				}
+				
+				//String userIdentifier = "lkdsfjlksdjfldjlfk"; 
+				HttpSession session = request.getSession();
+				session.setMaxInactiveInterval(3600);
+				session.setAttribute("userIdentifier", aData.getAdminId()+"");
+				session.setAttribute("userEmail", aData.getEmail());
+				session.setAttribute("userType", "admin");
+				System.out.println("Session ID from /admin/login = "+ session.getId());
+				
+				
+				//System.out.println("********* Loggedin user data: "+ adminService.findByEmail(loginReqDto.getEmail()).toString());
+				return aData;
+						//new ResponseDto("Success","Admin login successfull", new Date(), loginReqDto.getEmail()); 
+			}else {
+				throw new NotFoundException("Email and password doesnot match");
+			}
+		}
+		throw new NotFoundException("Invalid email. Please try again");
+	}
+	
+	/**
+	 * Logout for admin.
+	 * @param 
+	 * @return
+	 */
+	@PostMapping("/{id}/logout")
+	public ResponseDto logout(@PathVariable("id") int id, HttpServletRequest request) {
+		if(securityService.isloggedInAdmin(id+"",request)) {
+			HttpSession session = request.getSession(false); // Get the HttpSession without creating a new one
+			if (session != null) {
+			    session.invalidate(); // Invalidate the session
+			}
+			return new ResponseDto("Success","Session Invalidated.", new Date(), null);
+		}
+		throw new UnauthorizedUserException("Action not authorized for this admin", HttpServletResponse.SC_UNAUTHORIZED);
+	}
 	
 	/**
 	 * Get all admin user
@@ -36,12 +99,16 @@ public class AdminsController {
 	 * @return
 	 */
 	@GetMapping("")
-	public List<Admins> getAll() {
-		List<Admins> adminData = adminDao.findAll();
-		if(!adminData.isEmpty()) {
-			return adminData;
+	public List<Admins> getAll(HttpServletRequest request) {
+		System.out.println("Inside getAll ");
+		if(securityService.isAdmin(request)) {
+			List<Admins> adminData = adminDao.findAll();
+			if(!adminData.isEmpty()) {
+				return adminData;
+			}
+			throw new NotFoundException("No Admins data exist");
 		}
-		throw new NotFoundException("No Admins data exist");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 	/**
@@ -50,12 +117,15 @@ public class AdminsController {
 	 * @return
 	 */
 	@GetMapping("/{id}")
-	public Optional<Admins> getOne(@PathVariable("id") int id) {
-		Optional<Admins> adminData = adminService.findById(id);
-		if(adminData.isPresent()) {
-			return adminData;
+	public Optional<Admins> getOne(@PathVariable("id") int id, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			Optional<Admins> adminData = adminService.findById(id);
+			if(adminData.isPresent()) {
+				return adminData;
+			}
+			throw new NotFoundException("Admins data does exist with id '"+ id +"'");
 		}
-		throw new NotFoundException("Admins data does exist with id '"+ id +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 	/**
@@ -64,13 +134,16 @@ public class AdminsController {
 	 * @return
 	 */
 	@PostMapping("")
-	public Admins save(@RequestBody() Admins adminsReq) {
-		boolean eixts = adminService.existsByEmail(adminsReq.getEmail());
-		if (!eixts) {
-			adminsReq.setAddedOn(new Date());
-			return adminService.save(adminsReq);
+	public Admins save(@RequestBody() Admins adminsReq, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			boolean eixts = adminService.existsByEmail(adminsReq.getEmail());
+			if (!eixts) {
+				adminsReq.setAddedOn(new Date());
+				return adminService.save(adminsReq);
+			}
+			throw new AlreadyExistException("Admin user already exist with email '"+adminsReq.getEmail() +"'");
 		}
-		throw new AlreadyExistException("Admin user already exist with email '"+adminsReq.getEmail() +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 
@@ -80,12 +153,20 @@ public class AdminsController {
 	 * @return
 	 */
 	@PutMapping("/{id}")
-	public Admins udpate(@RequestBody Admins admins) {
-		boolean eixts = adminService.existsById(admins.getAdminId());
-		if (eixts) {
-			return adminService.save(admins);
+	public Admins udpate(@RequestBody Admins admins, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			int id = admins.getAdminId();
+			boolean eixts = adminService.existsById(id);
+			if (eixts) {
+				Admins adm = adminDao.findById(id).get();
+				if(adm.getPassword().equals(admins.getPassword()))
+					return adminDao.save(admins);
+				else
+					return adminService.save(admins);
+			}
+			throw new NotFoundException("Admin user does exist with id '"+ admins.getAdminId() +"'");
 		}
-		throw new NotFoundException("Admin user does exist with id '"+ admins.getAdminId() +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 
 	/**
@@ -94,32 +175,16 @@ public class AdminsController {
 	 * @return 
 	 */
 	@DeleteMapping("/{id}")
-	public ResponseDto deleteOne(@PathVariable("id") int id) {
-		boolean eixts = adminService.existsById(id);
-		if (eixts) {
-			adminService.deleteById(id);
-			return new ResponseDto("Success","Admin user deleted", new Date(), null);
-		}
-		throw new NotFoundException("Admin user does exist with id '"+ id +"'");
-	}
-	
-	/**
-	 * Validate Login for admin user.
-	 * @param adminsReq
-	 * @return
-	 */
-	@PostMapping("/login")
-	public ResponseDto save(@RequestBody LoginReqDto loginReqDto) {
-		boolean eixts = adminService.existsByEmail(loginReqDto.getEmail());
-		if (eixts) {
-			boolean match = adminService.login(loginReqDto);
-			if(match) {
-				return new ResponseDto("Success","Admin login successfull", new Date(), loginReqDto.getEmail()); 
-			}else {
-				throw new NotFoundException("Invalid password, password mismatch error.");
+	public ResponseDto deleteOne(@PathVariable("id") int id, HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			boolean eixts = adminService.existsById(id);
+			if (eixts) {
+				adminService.deleteById(id);
+				return new ResponseDto("Success","Admin user deleted", new Date(), null);
 			}
+			throw new NotFoundException("Admin user does exist with id '"+ id +"'");
 		}
-		throw new NotFoundException("Admin user does exist with email '"+loginReqDto.getEmail() +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 
 }

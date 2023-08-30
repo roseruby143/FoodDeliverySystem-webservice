@@ -5,6 +5,7 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -22,10 +23,13 @@ public class OrderItems {
 	private int id;
 	
 	@Column(name="quantity", nullable = false)
-	private String quantity;
+	private int quantity;
 	
 	@Column(name="item_total_price", nullable = false)
-	private String itemTotalPrice;
+	private double itemTotalPrice;
+	
+	@Column(name="instruction")
+	private String instruction;
 	
 	@ManyToOne
 	@OnDelete(action = OnDeleteAction.CASCADE)
@@ -40,11 +44,12 @@ public class OrderItems {
 		// TODO Auto-generated constructor stub
 	}
 
-	public OrderItems(int orderItemId, String quantity, String itemTotalPrice, int orderId, int menulistId) {
+	public OrderItems(int orderItemId, int quantity, double itemTotalPrice, String instruction, int orderId, int menulistId) {
 		super();
 		this.id = orderItemId;
 		this.quantity = quantity;
 		this.itemTotalPrice = itemTotalPrice;
+		this.instruction = instruction;
 		this.order = new Orders(orderId);
 		this.dish = new Dishes(menulistId);
 	}
@@ -57,20 +62,28 @@ public class OrderItems {
 		this.id = orderItemId;
 	}
 
-	public String getQuantity() {
+	public int getQuantity() {
 		return quantity;
 	}
 
-	public void setQuantity(String quantity) {
+	public void setQuantity(int quantity) {
 		this.quantity = quantity;
 	}
 
-	public String getItemTotalPrice() {
+	public double getItemTotalPrice() {
 		return itemTotalPrice;
 	}
 
-	public void setItemTotalPrice(String itemTotalPrice) {
+	public void setItemTotalPrice(double itemTotalPrice) {
 		this.itemTotalPrice = itemTotalPrice;
+	}
+
+	public String getInstruction() {
+		return instruction;
+	}
+
+	public void setInstruction(String instruction) {
+		this.instruction = instruction;
 	}
 
 	public Orders getOrder() {
@@ -85,16 +98,15 @@ public class OrderItems {
 		return dish;
 	}
 
-	public void setMenulist(Dishes menulist) {
+	public void setDish(Dishes menulist) {
 		this.dish = menulist;
 	}
 
 	@Override
 	public String toString() {
-		return "OrderItems [orderItemId=" + id + ", quantity=" + quantity + ", itemTotalPrice="
-				+ itemTotalPrice + ", order=" + order + ", dishes=" + dish + "]";
+		return "OrderItems [id=" + id + ", quantity=" + quantity + ", itemTotalPrice=" + itemTotalPrice
+				+ ", instruction=" + instruction + ", order=" + order + ", dish=" + dish + "]";
 	}
-	
 	
 
 }

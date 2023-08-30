@@ -1,6 +1,7 @@
 package com.project.fooddeliverysystem.dao.admin;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.project.fooddeliverysystem.model.admin.OrderItems;
@@ -17,4 +18,11 @@ public interface OrderItemsDAO  extends JpaRepository<OrderItems, Integer>{
 	
 	@Transactional
 	void deleteByOrderId(int orderId);
+
+	
+	@Query("SELECT oi FROM OrderItems oi " +
+	           "JOIN oi.order o " +
+	           "JOIN o.user u " +
+	           "WHERE u.id = :userId")
+	List<OrderItems> findByUserId(int userId);
 }

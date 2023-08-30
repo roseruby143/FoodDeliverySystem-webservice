@@ -11,5 +11,7 @@ public interface UserService {
 	boolean login(LoginReqDto loginReqDto);
 	
 	Users save(Users adminsReq);
+	
+	Users findByEmail(String email);
 
 }

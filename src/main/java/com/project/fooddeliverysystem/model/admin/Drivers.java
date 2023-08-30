@@ -22,20 +22,23 @@ public class Drivers {
 	@Column(name="first_name", nullable = false)
 	private String first_name;
 	
-	@Column(name="last_name", nullable = false)
+	@Column(name="last_name")
 	private String last_name;
 	
 	@Column(name="email", nullable = false)
 	private String email;
 	
-	@Column(name="phone")
+	@Column(name="phone", nullable = false)
 	private String phone;
 	
 	@Column(name="created_on")
 	private Date created_on;
 	
-	@Column(name="vehical_number")
+	@Column(name="vehical_number", nullable = false)
 	private String vehicalNumber;
+	
+	@Column(name="imgUrl")
+	private String imgUrl;
 	
 	/*
 	 * Refers if the driver is Active or Inactive
@@ -45,21 +48,14 @@ public class Drivers {
 	
 	@Column(name="rating")
 	private double rating;
-	
-	/*
-	 * 
-	 * @OneToMany(optional=false)
-	 * 
-	 * @OnDelete(action = OnDeleteAction.SET_NULL) private Delivery delivery;
-	 */
-
+		
 	public Drivers() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
 
 	public Drivers(int id, String first_name, String last_name, String email, String phone, Date created_on,
-			String vehicalNumber, String status, double rating) {
+			String vehicalNumber, String imgUrl, String status, double rating) {
 		super();
 		this.id = id;
 		this.first_name = first_name;
@@ -68,6 +64,7 @@ public class Drivers {
 		this.phone = phone;
 		this.created_on = created_on;
 		this.vehicalNumber = vehicalNumber;
+		this.imgUrl = imgUrl;
 		this.status = status;
 		this.rating = rating;
 	}
@@ -155,11 +152,19 @@ public class Drivers {
 		this.rating = rating;
 	}
 
+	public String getImgUrl() {
+		return imgUrl;
+	}
+
+	public void setImgUrl(String imgUrl) {
+		this.imgUrl = imgUrl;
+	}
+
 	@Override
 	public String toString() {
 		return "Drivers [id=" + id + ", first_name=" + first_name + ", last_name=" + last_name + ", email=" + email
-				+ ", phone=" + phone + ", created_on=" + created_on + ", vehicalNumber=" + vehicalNumber + ", status="
-				+ status + ", rating=" + rating + "]";
+				+ ", phone=" + phone + ", created_on=" + created_on + ", vehicalNumber=" + vehicalNumber + ", imgUrl="
+				+ imgUrl + ", status=" + status + ", rating=" + rating + "]";
 	}
 
 }

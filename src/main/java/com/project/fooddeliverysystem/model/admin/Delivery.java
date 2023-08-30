@@ -1,4 +1,4 @@
-package com.project.fooddeliverysystem.model.admin;
+	package com.project.fooddeliverysystem.model.admin;
 
 import java.util.Date;
 
@@ -7,6 +7,7 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -41,6 +42,9 @@ public class Delivery {
 	private Date deliveryDate;
 	//private Time deliveryTime;
 	
+	@Column(name="createdOn", nullable = false)
+	private Date createdOn;
+	
 	@Column(name="delivery_instruction")
 	private String deliveryInstruction;
 	//private String shipmentCompany;
@@ -63,7 +67,7 @@ public class Delivery {
 	}
 
 	public Delivery(int deliveryId, int deliveryStatus, String deliveryTitle, Date deliveryDate,
-			String deliveryInstruction, /* int orderId, */ int driverId) {
+			String deliveryInstruction, /* int orderId, */ int driverId, Date createdOn) {
 		super();
 		this.id = deliveryId;
 		this.deliveryStatus = deliveryStatus;
@@ -71,6 +75,7 @@ public class Delivery {
 		this.deliveryDate = deliveryDate;
 		this.deliveryInstruction = deliveryInstruction;
 		/* this.order = new Orders(orderId); */
+		this.createdOn = createdOn;
 		this.driver = new Drivers(driverId);
 	}
 
@@ -79,11 +84,11 @@ public class Delivery {
 		this.id = deliveryId;
 	}
 
-	public int getDeliveryId() {
+	public int getId() {
 		return id;
 	}
 
-	public void setDeliveryId(int deliveryId) {
+	public void setId(int deliveryId) {
 		this.id = deliveryId;
 	}
 
@@ -127,16 +132,25 @@ public class Delivery {
 	 */
  
 
+	public Date getCreatedOn() {
+		return createdOn;
+	}
+
+	public void setCreatedOn(Date createdOn) {
+		this.createdOn = createdOn;
+	}
 
 	public Drivers getDriver() { return driver; }
   
 	public void setDriver(Drivers driver) { this.driver = driver; }
-	 
 
 	@Override
 	public String toString() {
-		return "Delivery [deliveryId=" + id + ", deliveryStatus=" + deliveryStatus + ", deliveryTitle="
-				+ deliveryTitle + ", deliveryDate=" + deliveryDate + ", deliveryInstruction=" + deliveryInstruction //+"]";
-				+ /* ", order=" + order + */ ", driver=" + driver + "]";
+		return "Delivery [id=" + id + ", deliveryStatus=" + deliveryStatus + ", deliveryTitle=" + deliveryTitle
+				+ ", deliveryDate=" + deliveryDate + ", createdOn=" + createdOn + ", deliveryInstruction="
+				+ deliveryInstruction + ", driver=" + driver + "]";
 	}
+	 
+
+	
 }

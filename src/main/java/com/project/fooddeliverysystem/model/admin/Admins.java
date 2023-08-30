@@ -30,11 +30,15 @@ public class Admins {
 	@Column(name="fullName", nullable = false)
 	private String fullName;
 	
-	@Column(name="loginType", nullable = false)
-	private int loginType;
+	/*
+	 * @Column(name="loginType", nullable = false) private int loginType;
+	 */
 	
 	@Column(name="status", nullable = false)
 	private String status;
+	
+	@Column(name="imgUrl")
+	private String imgUrl;
 	
 	@Column(name="addedOn")
 	private Date addedOn;
@@ -44,15 +48,18 @@ public class Admins {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Admins(int adminId, String email, String password, String fullName, int loginType, Date addedOn, String status) {
+	public Admins(int adminId, String email, String password, String fullName,
+			/* int loginType, */ String status,
+			String imgUrl, Date addedOn) {
 		super();
 		this.adminId = adminId;
 		this.email = email;
 		this.password = password;
 		this.fullName = fullName;
-		this.loginType = loginType;
-		this.addedOn = addedOn;
+		//this.loginType = loginType;
 		this.status = status;
+		this.imgUrl = imgUrl;
+		this.addedOn = addedOn;
 	}
 
 	public int getAdminId() {
@@ -87,13 +94,11 @@ public class Admins {
 		this.fullName = fullName;
 	}
 
-	public int getLoginType() {
-		return loginType;
-	}
-
-	public void setLoginType(int loginType) {
-		this.loginType = loginType;
-	}
+	/*
+	 * public int getLoginType() { return loginType; }
+	 * 
+	 * public void setLoginType(int loginType) { this.loginType = loginType; }
+	 */
 
 	public Date getAddedOn() {
 		return addedOn;
@@ -111,9 +116,19 @@ public class Admins {
 		this.status = status;
 	}
 
+	public String getImgUrl() {
+		return imgUrl;
+	}
+
+	public void setImgUrl(String imgUrl) {
+		this.imgUrl = imgUrl;
+	}
+
 	@Override
 	public String toString() {
 		return "Admins [adminId=" + adminId + ", email=" + email + ", password=" + password + ", fullName=" + fullName
-				+ ", loginType=" + loginType + ", status=" + status + ", addedOn=" + addedOn + "]";
+				+ ", loginType="
+				+ /* loginType + ", status=" + */ status + ", imgUrl=" + imgUrl + ", addedOn=" + addedOn
+				+ "]";
 	}
 }

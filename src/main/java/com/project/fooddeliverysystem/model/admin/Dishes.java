@@ -33,8 +33,10 @@ public class Dishes {
 	@Column(name="description")
 	private String description;
 	
-	@Column(name="category")
+	
+	@Column(name="category") 
 	private String category;
+	 
 	
 	@Column(name="dish_image_url")
 	private String dishImageUrl;
@@ -51,13 +53,15 @@ public class Dishes {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Dishes(int dishId, String dish_name, double price, String description, String dishImageUrl, Date added_on,
-			int restaurantId) {
+	public Dishes(int id, String dish_name, double price, String description,
+			 String category,  String dishImageUrl,
+			Date added_on, int restaurantId) {
 		super();
-		this.id = dishId;
+		this.id = id;
 		this.dish_name = dish_name;
 		this.price = price;
 		this.description = description;
+		this.category = category;
 		this.dishImageUrl = dishImageUrl;
 		this.added_on = added_on;
 		this.restaurant = new Restaurant(restaurantId);
@@ -124,11 +128,21 @@ public class Dishes {
 		this.restaurant = restaurant;
 	}
 
+	
+	public String getCategory() { 
+		return category; 
+	}
+  
+	public void setCategory(String category) { 
+		this.category = category; 
+	}
+	 
+
 	@Override
 	public String toString() {
-		return "MenuList [dishId=" + id + ", dish_name=" + dish_name + ", price=" + price + ", description="
-				+ description + ", dishImageUrl=" + dishImageUrl + ", added_on=" + added_on + ", restaurant="
-				+ restaurant + "]";
+		return "Dishes [id=" + id + ", dish_name=" + dish_name + ", price=" + price + ", description=" + description
+				+  ", category=" + category +  ", dishImageUrl=" + dishImageUrl + ", added_on=" + added_on
+				+ ", restaurant=" + restaurant + "]";
 	}
 
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.project.fooddeliverysystem.dto.ResponseDto;
 import com.project.fooddeliverysystem.exceptions.AlreadyExistException;
 import com.project.fooddeliverysystem.exceptions.NotFoundException;
+import com.project.fooddeliverysystem.exceptions.UnauthorizedUserException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -27,5 +28,11 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ResponseDto> notFoundException(NotFoundException ex) {
 		responseDto = new ResponseDto(HttpStatus.NOT_FOUND.toString(), ex.getMessage(),new Date(), null );
 		return new ResponseEntity<ResponseDto>(responseDto, HttpStatus.NOT_FOUND);
+	}
+	
+	@ExceptionHandler(value = UnauthorizedUserException.class)
+	public ResponseEntity<ResponseDto> unauthorizedUserException(UnauthorizedUserException ex) {
+		responseDto = new ResponseDto(HttpStatus.UNAUTHORIZED.toString(), ex.getMessage(),new Date(), null );
+		return new ResponseEntity<ResponseDto>(responseDto, HttpStatus.UNAUTHORIZED);
 	}
 }

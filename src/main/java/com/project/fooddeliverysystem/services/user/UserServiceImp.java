@@ -30,5 +30,10 @@ public class UserServiceImp implements UserService{
 		userReq.setPassword(encodedPassword);
 		return userDao.save(userReq);
 	}
+	
+	@Override
+	public Users findByEmail(String email) {
+		return userDao.findByEmail(email);
+	}
 
 }

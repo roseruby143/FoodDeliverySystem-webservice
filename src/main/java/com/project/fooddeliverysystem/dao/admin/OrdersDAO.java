@@ -7,7 +7,6 @@ import com.project.fooddeliverysystem.model.admin.Delivery;
 import com.project.fooddeliverysystem.model.admin.Orders;
 
 import java.util.List;
-import com.project.fooddeliverysystem.model.user.Users;
 
 import jakarta.transaction.Transactional;
 

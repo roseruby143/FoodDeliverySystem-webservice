@@ -10,5 +10,5 @@ import jakarta.transaction.Transactional;
 
 public interface DeliveryDAO extends JpaRepository<Delivery, Integer>{
 	
-	
+	List<Delivery> findByDriverId(int id);
 }

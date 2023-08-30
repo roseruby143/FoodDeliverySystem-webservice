@@ -27,4 +27,6 @@ public interface AdminsService {
 	void deleteById(int id);
 
 	boolean login(LoginReqDto loginReqDto);
+	
+	Admins findByEmail(String email);
 }

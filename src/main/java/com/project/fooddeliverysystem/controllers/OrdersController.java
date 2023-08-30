@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,9 +20,17 @@ import com.project.fooddeliverysystem.dao.admin.OrdersDAO;
 import com.project.fooddeliverysystem.dao.user.UserDAO;
 import com.project.fooddeliverysystem.dto.ResponseDto;
 import com.project.fooddeliverysystem.exceptions.NotFoundException;
+import com.project.fooddeliverysystem.exceptions.UnauthorizedUserException;
 import com.project.fooddeliverysystem.model.admin.Delivery;
 import com.project.fooddeliverysystem.model.admin.Orders;
+import com.project.fooddeliverysystem.model.user.Users;
+import com.project.fooddeliverysystem.security.SecurityService;
+import com.project.fooddeliverysystem.services.admin.OrdersServiceImp;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@CrossOrigin(origins = {"http://localhost:4200","http://localhost:4100"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/v1")
 public class OrdersController {
@@ -34,6 +43,11 @@ public class OrdersController {
 	
 	@Autowired
 	private DeliveryDAO deliveryDao;
+
+	@Autowired 
+	private OrdersServiceImp orderService;
+
+	@Autowired private SecurityService securityService;
 	
 	/**
 	 * Get all Order
@@ -41,12 +55,15 @@ public class OrdersController {
 	 * @return
 	 */
 	@GetMapping("/orders")
-	public List<Orders> getAllOrders() {
-		List<Orders> restData = ordersDao.findAll();
-		if(!restData.isEmpty()) {
-			return restData;
+	public List<Orders> getAllOrders(HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			List<Orders> restData = ordersDao.findAll();
+			if(!restData.isEmpty()) {
+				return restData;
+			}
+			throw new NotFoundException("Orders does not exist");
 		}
-		throw new NotFoundException("Orders does not exist");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 	/**
@@ -55,12 +72,17 @@ public class OrdersController {
 	 * @return
 	 */
 	@GetMapping("/orders/{id}")
-	public Optional<Orders> getOneOrderById(@PathVariable("id") int id) {
-		Optional<Orders> resData = ordersDao.findById(id);
-		if(resData.isPresent()) {
-			return resData;
+	public Optional<Orders> getOneOrderById(@PathVariable("id") int id, HttpServletRequest request) {
+		int userId = ordersDao.findById(id).get().getUser().getId();
+		boolean isUserAuthorized = securityService.isActionAllowed(userId+"",  request );
+		if(isUserAuthorized) {
+			Optional<Orders> resData = ordersDao.findById(id);
+			if(resData.isPresent()) {
+				return resData;
+			}
+			throw new NotFoundException("Orders does not exist with id '"+ id +"'");
 		}
-		throw new NotFoundException("Orders does not exist with id '"+ id +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 	/**
@@ -69,15 +91,20 @@ public class OrdersController {
 	 * @return
 	 */
 	@GetMapping("/user/{id}/orders")
-	public List<Orders> getAllByUserId(@PathVariable("id") int id) {
-		if(userDao.existsById(id)) {
-			List<Orders> restData = ordersDao.findByUserId(id);
-			if(!restData.isEmpty()) {
-				return restData;
+	public List<Orders> getAllByUserId(@PathVariable("id") int id, HttpServletRequest request) {
+		//int userId = ordersDao.findById(id)?.get().getUser().getId();
+		boolean isUserAuthorized = securityService.isActionAllowed(id+"",  request );
+		if(isUserAuthorized) {
+			if(userDao.existsById(id)) {
+				List<Orders> restData = ordersDao.findByUserId(id);
+				if(!restData.isEmpty()) {
+					return restData;
+				}
+				throw new NotFoundException("Orders data does not exist for userid '"+id+"'");
 			}
-			throw new NotFoundException("Orders data does not exist");
+			throw new NotFoundException("User with id '"+id+"' does not exist");
 		}
-		throw new NotFoundException("User does not exist");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 	/**
@@ -86,13 +113,27 @@ public class OrdersController {
 	 * @return
 	 */
 	@PostMapping("/user/{id}/orders")
-	public Orders saveOrder(@RequestBody Orders ordersReq, @PathVariable("id") int id) {
-		boolean exists = userDao.existsById(id);
-		if (exists) {
-			ordersReq.setOrderDate(new Date());
-			return ordersDao.save(ordersReq);
+	public Orders saveOrder(@RequestBody Orders ordersReq, @PathVariable("id") int id, HttpServletRequest request) {
+		int userId = ordersReq.getUser().getId();
+		boolean isUserAuthorized = securityService.isActionAllowed(userId+"",  request );
+		if(isUserAuthorized) {
+			boolean exists = userDao.existsById(id);
+			if (exists) {
+				ordersReq.setOrderDate(new Date());
+				ordersReq.setOrderStatus("Order Created");
+				Delivery d = orderService.createDeliveryForOrder(ordersReq);
+				Delivery newDelivery = deliveryDao.save(d);
+				ordersReq.setDelivery(newDelivery);
+				//System.out.println("********** New newDelivery : "+newDelivery);
+				//System.out.println("********** New ordersReq : "+ordersReq);
+				//orderService.updateDelivery(newDelivery);
+				return ordersDao.save(ordersReq);
+				//orderService.
+				 
+			}
+			throw new NotFoundException("User with id '"+id +"' doesnot exist");
 		}
-		throw new NotFoundException("User with id '"+id +"' doesnot exist");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 
@@ -102,13 +143,18 @@ public class OrdersController {
 	 * @return
 	 */
 	@PutMapping("/orders/{id}")
-	public Orders udpateOrder(@RequestBody Orders orderData) {
-		boolean exists = ordersDao.existsById(orderData.getOrderId());
-		if (exists) {
-			//System.out.println("******************* orderData : "+orderData.toString());
-			return ordersDao.save(orderData);
+	public Orders udpateOrder(@RequestBody Orders orderData, HttpServletRequest request) {
+		int userId = orderData.getUser().getId();
+		boolean isUserAuthorized = securityService.isActionAllowed(userId+"",  request );
+		if(isUserAuthorized) {
+			boolean exists = ordersDao.existsById(orderData.getOrderId());
+			if (exists) {
+				//System.out.println("******************* orderData : "+orderData.toString());
+				return ordersDao.save(orderData);
+			}
+			throw new NotFoundException("Orders does not exist with id '"+ orderData.getOrderId() +"'");
 		}
-		throw new NotFoundException("Orders does not exist with id '"+ orderData.getOrderId() +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 
 	/**
@@ -117,11 +163,16 @@ public class OrdersController {
 	 * @return 
 	 */
 	@DeleteMapping("/orders/{id}")
-	public ResponseDto deleteOneOrder(@PathVariable("id") int id) {
-		boolean exists = ordersDao.existsById(id);
-		if (exists) {
-			ordersDao.deleteById(id);
-			return new ResponseDto("Success","Orders deleted", new Date(), null);
+	public ResponseDto deleteOneOrder(@PathVariable("id") int id, HttpServletRequest request) {
+		Optional<Orders> orderData = ordersDao.findById(id);
+		if(orderData!=null && !orderData.isEmpty()) {
+			int userId = orderData.get().getUser().getId();
+			boolean isUserAuthorized = securityService.isActionAllowed(userId+"",  request );
+			if(isUserAuthorized) {
+				ordersDao.deleteById(id);
+				return new ResponseDto("Success","Orders deleted", new Date(), null);
+			}
+			throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		}
 		throw new NotFoundException("Orders does not exist with id '"+ id +"'");
 	}
@@ -131,25 +182,30 @@ public class OrdersController {
 	 * @param id
 	 * @return 
 	 */
-	@DeleteMapping("/user/{id}/orders")
-	public ResponseDto deleteAllOrdersByUserId(@PathVariable("id") int id) {
-		//boolean exists = dishesDao.existsById(id);
-		if (userDao.existsById(id)) {
-			List<Orders> orderList = ordersDao.findByUserId(id);
-			ordersDao.deleteByUserId(id);
-			//System.out.println("*************** orderList: "+orderList.toString());
-			orderList.forEach(list -> {
-				Delivery delData = list.getDelivery();
-				//System.out.println("*************** delData: "+delData.toString());
-				if(delData != null) {
-					//System.out.println("*************** delData to be deleted for - "+delData.getDeliveryId());
-					
-					deliveryDao.deleteById(delData.getDeliveryId());
-				}
-			});
-			return new ResponseDto("Success","All Orders deleted for User id "+id, new Date(), null);
+	@DeleteMapping("/user/{id}/orders") // TODO check if we can do it without foreach
+	public ResponseDto deleteAllOrdersByUserId(@PathVariable("id") int id, HttpServletRequest request) {
+		//int userId = userDao.findById(id).get().getId();
+		boolean isUserAuthorized = securityService.isActionAllowed(id+"",  request );
+		if(isUserAuthorized) {
+
+			if (userDao.existsById(id)) {
+				List<Orders> orderList = ordersDao.findByUserId(id);
+				ordersDao.deleteByUserId(id);
+				//System.out.println("*************** orderList: "+orderList.toString());
+				orderList.forEach(list -> {
+					Delivery delData = list.getDelivery();
+					//System.out.println("*************** delData: "+delData.toString());
+					if(delData != null) {
+						//System.out.println("*************** delData to be deleted for - "+delData.getDeliveryId());
+						
+						deliveryDao.deleteById(delData.getId());
+					}
+				});
+				return new ResponseDto("Success","All Orders deleted for User id "+id, new Date(), null);
+			}
+			throw new NotFoundException("User with id '"+ id +"' dosenot exist.");
 		}
-		throw new NotFoundException("User with id '"+ id +"' dosenot exist.");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 	
@@ -161,15 +217,23 @@ public class OrdersController {
 	 * @return
 	 */
 	@GetMapping("/orders/{id}/delivery")
-	public Optional<Delivery> getAllByOrderId(@PathVariable("id") int id) {
-		if(ordersDao.existsById(id)) {
-			Optional<Orders> orderDetail = ordersDao.findById(id);
-			if(orderDetail.get().getDelivery() != null) {
-				return deliveryDao.findById(orderDetail.get().getDelivery().getDeliveryId());
+	public Optional<Delivery> getAllByOrderId(@PathVariable("id") int id, HttpServletRequest request) {
+		Optional<Orders> orderDetail = ordersDao.findById(id);
+		if(orderDetail!=null && orderDetail.isPresent()) {
+			boolean isUserAuthorized = securityService.isActionAllowed(orderDetail.get().getUser().getId()+"",  request );
+			if(isUserAuthorized) {
+				if(orderDetail.get().getDelivery() != null) {
+					return deliveryDao.findById(orderDetail.get().getDelivery().getId());
+				}
+				throw new NotFoundException("Delivery for order with id '"+ id +"' dosenot exist.");
+				
 			}
-			throw new NotFoundException("Delivery for order with id '"+ id +"' dosenot exist.");
+			throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		}
+
 		throw new NotFoundException("Order does not exist");
+		
+		
 	}
 
 	/**
@@ -178,17 +242,23 @@ public class OrdersController {
 	 * @return 
 	 */
 	@DeleteMapping("/orders/{id}/delivery")
-	public ResponseDto deleteAllDeliveryByOrderId(@PathVariable("id") int id) {
+	public ResponseDto deleteAllDeliveryByOrderId(@PathVariable("id") int id, HttpServletRequest request) {
 		//boolean exists = dishesDao.existsById(id);
-		if (ordersDao.existsById(id)) {
-			Optional<Orders> orderDetail = ordersDao.findById(id);
-			if(orderDetail.get().getDelivery()!=null) {
-				deliveryDao.deleteById(orderDetail.get().getDelivery().getDeliveryId());
-				return new ResponseDto("Success","All Delivery deleted for order id "+id, new Date(), null);
+		Optional<Orders> orderDetail = ordersDao.findById(id);
+		if(orderDetail!=null && orderDetail.isPresent()) {
+			boolean isUserAuthorized = securityService.isActionAllowed(orderDetail.get().getUser().getId()+"",  request );
+			if(isUserAuthorized) {
+				//Optional<Orders> orderDetail = ordersDao.findById(id);
+				if(orderDetail.get().getDelivery()!=null) {
+					deliveryDao.deleteById(orderDetail.get().getDelivery().getId());
+					return new ResponseDto("Success","All Delivery deleted for order id "+id, new Date(), null);
+				}
+				throw new NotFoundException("Delivery for order with id '"+ id +"' dosenot exist.");
 			}
-			throw new NotFoundException("Delivery for order with id '"+ id +"' dosenot exist.");
+			throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		}
 		throw new NotFoundException("Order with id '"+ id +"' dosenot exist.");
+		
 	}
 	
 

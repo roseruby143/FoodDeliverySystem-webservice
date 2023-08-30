@@ -63,4 +63,10 @@ public class AdminsServiceImp implements AdminsService{
 		passwordEncoder = new BCryptPasswordEncoder();
 		Admins admins  = adminsRepository.findByEmail(loginReqDto.getEmail());
 		return passwordEncoder.matches(loginReqDto.getPassword(), admins.getPassword());
-	}}
+	}
+	
+	@Override
+	public Admins findByEmail(String email) {
+		return adminsRepository.findByEmail(email);
+	}
+}

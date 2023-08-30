@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,9 +20,15 @@ import com.project.fooddeliverysystem.dao.user.UserDAO;
 import com.project.fooddeliverysystem.dto.ResponseDto;
 import com.project.fooddeliverysystem.exceptions.AlreadyExistException;
 import com.project.fooddeliverysystem.exceptions.NotFoundException;
+import com.project.fooddeliverysystem.exceptions.UnauthorizedUserException;
 import com.project.fooddeliverysystem.model.user.Favorites;
 import com.project.fooddeliverysystem.model.user.Users;
+import com.project.fooddeliverysystem.security.SecurityService;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+@CrossOrigin(origins = {"http://localhost:4200","http://localhost:4100"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/v1")
 public class FavoritesController {
@@ -31,6 +38,7 @@ public class FavoritesController {
 	
 	@Autowired
 	private UserDAO userDao;
+	@Autowired private SecurityService securityService;
 	
 	/**
 	 * Get all favorites
@@ -38,13 +46,16 @@ public class FavoritesController {
 	 * @return List<Favorites>
 	 */
 	@GetMapping("/favorites")
-	public List<Favorites> getAll() {
-		List<Favorites> restData = favDao.findAll();
-		if(!restData.isEmpty()) {
-			return restData;
+	public List<Favorites> getAll(HttpServletRequest request) {
+		if(securityService.isAdmin(request)) {
+			List<Favorites> restData = favDao.findAll();
+			if(!restData.isEmpty()) {
+				return restData;
+			}
+			//return new ResponseDto("Failure","Order Items data does not exist", new Date(), loginReqDto.getEmail()); 
+			throw new NotFoundException("Favorite Items data does not exist");
 		}
-		//return new ResponseDto("Failure","Order Items data does not exist", new Date(), loginReqDto.getEmail()); 
-		throw new NotFoundException("Favorite Items data does not exist");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 	}
 	
 	/**
@@ -53,12 +64,18 @@ public class FavoritesController {
 	 * @return Optional<Favorites>
 	 */
 	@GetMapping("/favorites/{id}")
-	public Optional<Favorites> getOne(@PathVariable("id") int id) {
-		Optional<Favorites> resData = favDao.findById(id);
-		if(resData.isPresent()) {
-			return resData;
+	public Optional<Favorites> getOne(@PathVariable("id") int id , HttpServletRequest request) {
+		Optional<Favorites> fav = favDao.findById(id);
+		if(fav!=null && fav.isPresent()) {
+			boolean isUserAuthorized = securityService.isActionAllowed(id+"",  request );
+			
+			if(isUserAuthorized) {
+				return fav;
+			}
+			throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		}
 		throw new NotFoundException("Favorite does not exist with id '"+ id +"'");
+		
 	}
 	
 	/**
@@ -67,17 +84,22 @@ public class FavoritesController {
 	 * @return
 	 */
 	@GetMapping("/user/{id}/favorites")
-	public List<Favorites> getAllByUserId(@PathVariable("id") int id) {
-		if(userDao.existsById(id)) {
-			Optional<Users> userData = userDao.findById(id);
+	public List<Favorites> getAllByUserId(@PathVariable("id") int id, HttpServletRequest request) {
+		Optional<Users> userData = userDao.findById(id);
+		if(userData!=null && userData.isPresent()) {
 			//System.out.println("************ userData : "+userData.toString());
 			//System.out.println("************ orderId : "+orderData.get().getOrderId());
-			List<Favorites> restData = favDao.findByUserId(userData.get().getUserId());
-			//System.out.println("************ Favorite Data : "+restData.toString());
-			if(!restData.isEmpty()) {
-				return restData;
+			
+			boolean isUserAuthorized = securityService.isActionAllowed(id+"",  request );
+			if(isUserAuthorized) {
+				List<Favorites> restData = favDao.findByUserId(userData.get().getId());
+				//System.out.println("************ Favorite Data : "+restData.toString());
+				if(!restData.isEmpty()) {
+					return restData;
+				}
+				throw new NotFoundException("Favorite data does not exist");
 			}
-			throw new NotFoundException("Favorite data does not exist");
+			throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		}
 		throw new NotFoundException("User does not exist");
 	}
@@ -88,16 +110,20 @@ public class FavoritesController {
 	 * @return
 	 */
 	@PostMapping("/user/{id}/favorites")
-	public Favorites save(@RequestBody Favorites favReq, @PathVariable("id") int id) {
-		boolean exists = userDao.existsById(id);
-		if (exists) {
-			//System.out.println("************ favReq.getDishes() : "+favReq.toString());
-			//boolean existByUserAndDIsh = favDao.existsByUserIdAndDishesId(id, favReq.getDishes().getDishId());
-			//System.out.println("************ existByUserAndDIsh : "+existByUserAndDIsh);
-			if(!favDao.existsByUserIdAndDishesId(id, favReq.getDishes().getDishId())) {
-				return favDao.save(favReq);
+	public Favorites save(@RequestBody Favorites favReq, @PathVariable("id") int id, HttpServletRequest request) {
+		Optional<Users> userData = userDao.findById(id);
+		if(userData!=null && userData.isPresent()) {
+			//System.out.println("************ userData : "+userData.toString());
+			//System.out.println("************ orderId : "+orderData.get().getOrderId());
+			
+			boolean isUserAuthorized = securityService.isActionAllowed(id+"",  request );
+			if(isUserAuthorized) {
+				if(!favDao.existsByUserIdAndDishesId(id, favReq.getDishes().getDishId())) {
+					return favDao.save(favReq);
+				}
+				throw new AlreadyExistException("Favorite Dish already exist with id '"+favReq.getDishes().getDishId() +"'");
 			}
-			throw new AlreadyExistException("Favorite Dish already exist with id '"+favReq.getDishes().getDishId() +"'");
+			throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		}
 		throw new NotFoundException("User doesnot exist with id '"+id +"'");
 	}
@@ -109,12 +135,17 @@ public class FavoritesController {
 	 * @return
 	 */
 	@PutMapping("/favorites/{id}")
-	public Favorites udpate(@RequestBody Favorites favItem) {
-		boolean exists = favDao.existsById(favItem.getId());
-		if (exists) {
-			return favDao.save(favItem);
+	public Favorites udpate(@RequestBody Favorites favItem, HttpServletRequest request) {
+		boolean isUserAuthorized = securityService.isActionAllowed(favItem.getUser().getId()+"",  request );
+		if(isUserAuthorized) {
+			boolean exists = favDao.existsById(favItem.getId());
+			if (exists) {
+				return favDao.save(favItem);
+			}
+			throw new NotFoundException("Favorites does not exist with id '"+ favItem.getId() +"'");
 		}
-		throw new NotFoundException("Favorites does not exist with id '"+ favItem.getId() +"'");
+		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
+		
 	}
 
 	/**
@@ -123,11 +154,15 @@ public class FavoritesController {
 	 * @return 
 	 */
 	@DeleteMapping("/favorites/{id}")
-	public ResponseDto deleteOne(@PathVariable("id") int id) {
-		boolean exists = favDao.existsById(id);
-		if (exists) {
-			favDao.deleteById(id);
-			return new ResponseDto("Success","Favorites deleted with id "+id, new Date(), null);
+	public ResponseDto deleteOne(@PathVariable("id") int id, HttpServletRequest request) {
+		Optional<Favorites> favItem = favDao.findById(id);
+		if(favItem!=null && favItem.isPresent()) {
+			boolean isUserAuthorized = securityService.isActionAllowed(favItem.get().getUser().getId()+"",  request );
+			if(isUserAuthorized) {
+				favDao.deleteById(id);
+				return new ResponseDto("Success","Favorites deleted with id "+id, new Date(), null);
+			}
+			throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		}
 		throw new NotFoundException("Favorites does not exist with id '"+ id +"'");
 	}
@@ -138,12 +173,21 @@ public class FavoritesController {
 	 * @return 
 	 */
 	@DeleteMapping("/user/{id}/favorites")
-	public ResponseDto deleteAllFavoritesByUserId(@PathVariable("id") int id) {
-		//boolean exists = dishesDao.existsById(id);
-		if (userDao.existsById(id)) {
-			favDao.deleteByUserId(id);
-			return new ResponseDto("Success","All Favorite deleted for User id "+id, new Date(), null);
+	public ResponseDto deleteAllFavoritesByUserId(@PathVariable("id") int id, HttpServletRequest request) {
+		Optional<Favorites> favItem = favDao.findById(id);
+		if(favItem!=null && favItem.isPresent()) {
+			boolean isUserAuthorized = securityService.isActionAllowed(favItem.get().getUser().getId()+"",  request );
+			if(isUserAuthorized) {
+				//boolean exists = dishesDao.existsById(id);
+				if (userDao.existsById(id)) {
+					favDao.deleteByUserId(id);
+					return new ResponseDto("Success","All Favorite deleted for User id "+id, new Date(), null);
+				}
+				throw new NotFoundException("User with id '"+ id +"' dosenot exist.");
+			}
+			throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		}
-		throw new NotFoundException("User with id '"+ id +"' dosenot exist.");
+		throw new NotFoundException("Favorites item does not exist for user with id '"+ id +"'");
 	}
+	
 }
