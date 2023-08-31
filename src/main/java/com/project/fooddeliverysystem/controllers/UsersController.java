@@ -32,6 +32,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 @CrossOrigin(origins = {"http://ec2-54-82-234-235.compute-1.amazonaws.com:4200","http://ec2-54-82-234-235.compute-1.amazonaws.com:4100"}, allowCredentials = "true")
+//@CrossOrigin(origins = {"http://localhost:4200","http://localhost:4100"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/v1")
 public class UsersController {
@@ -138,19 +139,13 @@ public class UsersController {
 	@PostMapping("/user/register")
 	public Users save(@RequestBody Users userReq, HttpServletRequest httpRequest) {
 		
-		boolean isUserAuthorized = securityService.isActionAllowed(userReq.getId()+"",  httpRequest );
-		
-		if(isUserAuthorized) {
-			boolean eixts = userDao.existsByEmail(userReq.getEmail());
-			if (!eixts) {
-				userReq.setCreated_on(new Date());
-				return userService.save(userReq);
-			}
-			throw new AlreadyExistException("User already exist with email '"+userReq.getEmail() +"'");
+		boolean eixts = userDao.existsByEmail(userReq.getEmail());
+		if (!eixts) {
+			userReq.setCreated_on(new Date());
+			return userService.save(userReq);
 		}
-		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
-		
-		
+		throw new AlreadyExistException("User already exist with email '"+userReq.getEmail() +"'");
+	
 	}
 	
 
