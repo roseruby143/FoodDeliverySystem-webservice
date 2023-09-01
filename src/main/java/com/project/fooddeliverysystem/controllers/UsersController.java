@@ -197,7 +197,7 @@ public class UsersController {
 	}
 	
 	/**
-	 * Create Address.
+	 * Register First time Address.
 	 * @param userReq
 	 * @return
 	 */
@@ -214,6 +214,22 @@ public class UsersController {
 		}
 		throw new UnauthorizedUserException("Action not authorized for this user", HttpServletResponse.SC_UNAUTHORIZED);
 		
+	}
+	
+	
+	/**
+	 * Create Address.
+	 * @param userReq
+	 * @return
+	 */
+	@PostMapping("/user/{id}/register/address")
+	public Address registerAddress(@RequestBody Address addressData, @PathVariable("id") int userId, HttpServletRequest httpRequest) {
+		boolean eixts = userDao.existsById(userId);
+		if (eixts) {
+			//userReq.setCreated_on(new Date());
+			return addressDao.save(addressData);
+		}
+		throw new NotFoundException("User does not exist with id '"+ userId +"'");
 	}
 	
 
