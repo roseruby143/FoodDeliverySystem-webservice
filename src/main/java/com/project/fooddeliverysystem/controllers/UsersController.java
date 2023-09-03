@@ -31,7 +31,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
-@CrossOrigin(origins = {"http://ec2-54-82-234-235.compute-1.amazonaws.com:4200","http://ec2-54-82-234-235.compute-1.amazonaws.com:4100"}, allowCredentials = "true")
+@CrossOrigin(origins = {"${eatout.base.url.user}","${eatout.base.url.admin}"}, allowCredentials = "true")
+//@CrossOrigin(origins = {"http://ec2-54-82-234-235.compute-1.amazonaws.com:4200","http://ec2-54-82-234-235.compute-1.amazonaws.com:4100"}, allowCredentials = "true")
 //@CrossOrigin(origins = {"http://localhost:4200","http://localhost:4100"}, allowCredentials = "true")
 @RestController
 @RequestMapping("/v1")
@@ -48,30 +49,25 @@ public class UsersController {
 	 */
 	@PostMapping("/user/login")
 	public Users login(@RequestBody LoginReqDto loginReqDto, HttpServletRequest request) {
-		boolean eixts = userDao.existsByEmail(loginReqDto.getEmail());
-		if (eixts) {
-			boolean match = userService.login(loginReqDto);
-			if(match) {
-				Users uData = userService.findByEmail(loginReqDto.getEmail());
-				
-				// check for user status
-				if(!uData.getStatus().equalsIgnoreCase("active")) {
-					throw new NotFoundException("User not active.");
+		Users uData = userService.findByEmail(loginReqDto.getEmail());
+		if(uData != null) {
+			if(uData.getStatus().equalsIgnoreCase("active")) { // check for user status
+				boolean match = userService.login(loginReqDto);
+				if(match) {
+					//String userIdentifier = "lkdsfjlksdjfldjlfk"; 
+					HttpSession session = request.getSession();
+					session.setMaxInactiveInterval(3600);
+					session.setAttribute("userIdentifier", uData.getId()+"");
+					session.setAttribute("userEmail", uData.getEmail());
+					session.setAttribute("userType", "user");
+					System.out.println("Session ID from /user/login = "+ session.getId());
+					
+					return uData;
+					//return new ResponseDto("Success","User login successfull", new Date(), loginReqDto.getEmail()); 
 				}
-				
-				//String userIdentifier = "lkdsfjlksdjfldjlfk"; 
-				HttpSession session = request.getSession();
-				session.setMaxInactiveInterval(3600);
-				session.setAttribute("userIdentifier", uData.getId()+"");
-				session.setAttribute("userEmail", uData.getEmail());
-				session.setAttribute("userType", "user");
-				System.out.println("Session ID from /user/login = "+ session.getId());
-				
-				return uData;
-				//return new ResponseDto("Success","User login successfull", new Date(), loginReqDto.getEmail()); 
-			}else {
 				throw new NotFoundException("Invalid password, password mismatch error.");
 			}
+			throw new NotFoundException("User with email '"+loginReqDto.getEmail() +"' is not active.");
 		}
 		throw new NotFoundException("User does not exist with email '"+loginReqDto.getEmail() +"'");
 	}
