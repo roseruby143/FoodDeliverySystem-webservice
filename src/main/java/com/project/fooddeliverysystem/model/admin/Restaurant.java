@@ -14,7 +14,7 @@ import jakarta.persistence.TableGenerator;
 @Table(name = "restaurant")
 public class Restaurant {
 	
-	@TableGenerator(name="customIncrementer", allocationSize = 1, initialValue = 1)
+	@TableGenerator(name="customIncrementer", allocationSize = 1, initialValue = 15)
 	@Id
 	@GeneratedValue(strategy = GenerationType.TABLE, generator = "customIncrementer")
 	private int id;

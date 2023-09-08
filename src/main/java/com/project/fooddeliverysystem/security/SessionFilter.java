@@ -28,7 +28,7 @@ public class SessionFilter implements Filter {
 		  
 		  String method = httpRequest.getMethod();
 		  
-		  System.out.println("path and Session ID in the filter = "+path +" && " + method +" && " + session.getId());
+		  //System.out.println("path and Session ID in the filter = "+path +" && " + method +" && " + session.getId());
 //		  System.out.println("Session ID in Filter = " + session.getId()) ;
 		  
 		 

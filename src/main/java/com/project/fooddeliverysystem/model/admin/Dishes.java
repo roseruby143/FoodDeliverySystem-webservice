@@ -19,9 +19,9 @@ import jakarta.persistence.TableGenerator;
 @Table(name = "dishes")
 public class Dishes {
 	
-	@TableGenerator(name="customIncrementer", allocationSize = 1, initialValue = 1)
+	@TableGenerator(name="customDishIncrementer", allocationSize = 1, initialValue = 100)
 	@Id
-	@GeneratedValue(strategy = GenerationType.TABLE, generator = "customIncrementer")
+	@GeneratedValue(strategy = GenerationType.TABLE, generator = "customDishIncrementer")
 	private int id;
 	
 	@Column(name="dish_name", nullable = false)

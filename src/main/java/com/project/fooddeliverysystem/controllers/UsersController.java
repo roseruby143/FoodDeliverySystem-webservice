@@ -60,7 +60,7 @@ public class UsersController {
 					session.setAttribute("userIdentifier", uData.getId()+"");
 					session.setAttribute("userEmail", uData.getEmail());
 					session.setAttribute("userType", "user");
-					System.out.println("Session ID from /user/login = "+ session.getId());
+					//System.out.println("Session ID from /user/login = "+ session.getId());
 					
 					return uData;
 					//return new ResponseDto("Success","User login successfull", new Date(), loginReqDto.getEmail()); 

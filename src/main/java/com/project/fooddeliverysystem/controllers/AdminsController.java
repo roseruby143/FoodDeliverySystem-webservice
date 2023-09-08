@@ -68,7 +68,7 @@ public class AdminsController {
 				session.setAttribute("userIdentifier", aData.getAdminId()+"");
 				session.setAttribute("userEmail", aData.getEmail());
 				session.setAttribute("userType", "admin");
-				System.out.println("Session ID from /admin/login = "+ session.getId());
+				//System.out.println("Session ID from /admin/login = "+ session.getId());
 				
 				
 				//System.out.println("********* Loggedin user data: "+ adminService.findByEmail(loginReqDto.getEmail()).toString());
